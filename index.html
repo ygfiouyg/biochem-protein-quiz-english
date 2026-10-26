@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار البيوكمستري - البروتينات</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px; direction: rtl;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header {
+            background: white; border-radius: 20px; padding: 30px;
+            margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .header h1 { color: #764ba2; font-size: 28px; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 16px; }
+        .progress-bar {
+            background: white; border-radius: 20px; padding: 20px 30px;
+            margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .progress-info {
+            display: flex; justify-content: space-between;
+            margin-bottom: 10px; color: #333; font-weight: 600;
+        }
+        .progress-track {
+            background: #e0e0e0; height: 20px;
+            border-radius: 10px; overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%; border-radius: 10px;
+            transition: width 0.5s ease; width: 0%;
+        }
+        .score-display {
+            background: white; border-radius: 20px; padding: 20px 30px;
+            margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex; justify-content: space-around; text-align: center;
+        }
+        .score-item { flex: 1; }
+        .score-item .label { color: #666; font-size: 14px; margin-bottom: 5px; }
+        .score-item .value { font-size: 32px; font-weight: bold; }
+        .score-correct { color: #4CAF50; }
+        .score-wrong { color: #f44336; }
+        .score-total { color: #764ba2; }
+        .question-card {
+            background: white; border-radius: 20px; padding: 30px;
+            margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .question-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 8px 20px; border-radius: 20px;
+            display: inline-block; margin-bottom: 15px; font-weight: 600;
+        }
+        .question-text { font-size: 20px; color: #333; margin-bottom: 25px; line-height: 1.6; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .option {
+            background: #f8f9fa; border: 3px solid #e0e0e0;
+            border-radius: 15px; padding: 15px 20px;
+            cursor: pointer; transition: all 0.3s ease; font-size: 16px;
+        }
+        .option:hover {
+            border-color: #667eea; background: #f0f0ff;
+            transform: translateX(-5px);
+        }
+        .option.selected {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+        }
+        .option.correct { border-color: #4CAF50; background: #4CAF5020; }
+        .option.wrong { border-color: #f44336; background: #f4433620; }
+        .option.disabled { pointer-events: none; }
+        .feedback {
+            margin-top: 20px; padding: 20px; border-radius: 15px; display: none;
+        }
+        .feedback.show { display: block; animation: fadeIn 0.5s ease; }
+        .feedback.correct {
+            background: #4CAF5020; border-right: 5px solid #4CAF50;
+        }
+        .feedback.wrong {
+            background: #f4433620; border-right: 5px solid #f44336;
+        }
+        .feedback h3 { margin-bottom: 10px; font-size: 18px; }
+        .feedback.correct h3 { color: #4CAF50; }
+        .feedback.wrong h3 { color: #f44336; }
+        .feedback p { color: #555; line-height: 1.7; }
+        .next-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 15px 40px;
+            border-radius: 25px; font-size: 18px; cursor: pointer;
+            margin-top: 20px; display: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .next-btn.show { display: inline-block; }
+        .next-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .results {
+            background: white; border-radius: 20px; padding: 40px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            display: none;
+        }
+        .results.show { display: block; animation: fadeIn 0.5s ease; }
+        .results h2 { color: #764ba2; font-size: 32px; margin-bottom: 20px; }
+        .results .emoji { font-size: 80px; margin: 20px 0; }
+        .results-stats {
+            display: flex; justify-content: center; gap: 40px; margin: 30px 0;
+        }
+        .stat { text-align: center; }
+        .stat .number { font-size: 48px; font-weight: bold; }
+        .stat .label { color: #666; margin-top: 5px; }
+        .restart-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 15px 50px;
+            border-radius: 25px; font-size: 20px; cursor: pointer;
+            margin-top: 20px; transition: transform 0.3s ease;
+        }
+        .restart-btn:hover { transform: scale(1.1); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧬 Biochemistry Comprehensive Quiz</h1>
+            <p>Proteins Lecture - Biochemistry I</p>
+        </div>
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-info">
+                <span>Progress</span>
+                <span id="progressText">0 / 50</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        <div class="score-display">
+            <div class="score-item">
+                <div class="label">✅ Correct</div>
+                <div class="value score-correct" id="correctCount">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">❌ Wrong</div>
+                <div class="value score-wrong" id="wrongCount">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">📊 Score</div>
+                <div class="value score-total" id="percentage">0%</div>
+            </div>
+        </div>
+        <div id="quizContainer"></div>
+        <div class="results" id="results">
+            <h2>🎉 Quiz Completed!</h2>
+            <div class="emoji" id="resultEmoji">🎊</div>
+            <div class="results-stats">
+                <div class="stat">
+                    <div class="number" id="finalCorrect">0</div>
+                    <div class="label">إجابات Correct</div>
+                </div>
+                <div class="stat">
+                    <div class="number" id="finalPercentage">0%</div>
+                    <div class="label">Score النهائية</div>
+                </div>
+            </div>
+            <p style="color: #666; margin: 20px 0;" id="resultMessage"></p>
+            <button class="restart-btn" onclick="restartQuiz()">🔄 Restart Quiz</button>
+        </div>
+    </div>
+    <script>
+const questions = [
+    {
+        question: "What is the basic unit of protein building?",
+        options: ["Nucleic acids", "Amino acids", "Glucose", "Lipids"],
+        correct: 1,
+        explanation: "البروتينات تتكون of سلاسل of Amino acids المترابطة بروابط ببتيدية. كل حمض أميني بيتكون of مجموعة أمين ومجموعة كربوكسيل وسلسلة جانبية (R-group) مرتبطة بالكربون ألفا."
+    },
+    {
+        question: "How many amino acids are commonly found in mammalian proteins?",
+        options: ["10 amino acids", "15 amino acids", "20 amino acids", "25 amino acids"],
+        correct: 2,
+        explanation: "رغم وجود أكثر of 100 حمض أميني في الطبيعة، إلا أن 20 amino acids فقط هي اللي بتتوجد بشكل شائع في بروتينات الثدييات."
+    },
+    {
+        question: "What bond links amino acids together in a peptide chain?",
+        options: ["Ionic bond", "Hydrogen bond", "Peptide bond (amide linkage)", "Covalent bond C-S"],
+        correct: 2,
+        explanation: "الرابطة الببتيدية هي Covalent bond بين مجموعة الكربوكسيل (α-carboxyl) لحمض أميني ومجموعة الأمين (α-amino group) لحمض أميني آخر."
+    },
+    {
+        question: "Which protein is responsible for oxygen transport in blood?",
+        options: ["Myoglobin", "Hemoglobin", "Albumin", "Ferritin"],
+        correct: 1,
+        explanation: "Hemoglobin هو بروتين نقل مسئول عن حمل الأكسجين of الرئتين للأنسجة. أما Myoglobin فهو بيطون الأكسجين في العضلات."
+    },
+    {
+        question: "أي of التالي يعتبر بروتين إنزيمي (Enzyme)؟",
+        options: ["Keratin", "Insulin", "RUBISCO", "Ferritin"],
+        correct: 2,
+        explanation: "RUBISCO هو إنزيم موجود في النباتات وبيشارك في تفاعل تثبيت الكربون في البناء الضوئي. تقريبًا كل الإنزيمات في الجسم هي بروتينات."
+    },
+    {
+        question: "What is the function of Ferritin protein?",
+        options: ["Oxygen transport", "Iron storage", "Antibody production", "Food digestion"],
+        correct: 1,
+        explanation: "Ferritin هو بروتين تخزيني بيخزن الحديد في الطحال والكبد. of أمثلة البروتينات التخزينية كمان الكازين في اللبن وAlbumin في بياض البيض."
+    },
+    {
+        question: "Which proteins are responsible for muscle contraction?",
+        options: ["Keratin وElastin", "Actin and Myosin", "Collagen and Elastin", "Insulin والجلوكاجون"],
+        correct: 1,
+        explanation: "Actin and Myosin هما بروتينات انقباضية. الميوسين بيمثل الخيوط الثابتة وActin بيحركها في انقباض العضلات."
+    },
+    {
+        question: "أي of التالي يعتبر بروتين حماية (Protective protein)؟",
+        options: ["Hemoglobin", "Ferritin", "Antibodies (Immunoglobulins)", "Insulin"],
+        correct: 2,
+        explanation: "Antibodies (Immunoglobulins) والفيبرينوجين of البروتينات الحامية. الأجسام المضادة بتتعرف على الميكروبات وتدمرها."
+    },
+    {
+        question: "أين يوجد Collagen of النوع الأول (Type I)؟",
+        options: ["Articular cartilage only", "Skin, bones, and tendons", "Eyeball only", "Cornea only"],
+        correct: 1,
+        explanation: "Collagen of النوع الأول موجود في الجلد، العظام، الأوتار، الأربطة، الأوعية الدموية، العضلات الهيكلية، الأنسجة الدهنية، وصمامات القلب."
+    },
+    {
+        question: "What is the main structural protein in hair and skin?",
+        options: ["Collagen", "Keratin", "Elastin", "Actin"],
+        correct: 1,
+        explanation: "Keratin وElastin of البروتينات الهيكلية. Keratin موجود في الشعر والجلد، وElastin بيدي المرونة للأنسجة."
+    },
+    {
+        question: "What is the ionic form of amino acid at physiological pH (7.4)?",
+        options: ["Cation (+)", "Anion (-)", "Zwitterion", "Neutral molecule without charge"],
+        correct: 2,
+        explanation: "عند الـ pH الفسيولوجي (7.4)، Amino acids بتكون في شكل زيتر أيون (dipolar ion) يعني مجموعة الأمين موجبة (+NH3) ومجموعة الكربوكسيل سالبة (-COO)."
+    },
+    {
+        question: "In acidic solution (pH = 1), what is the form of amino acid?",
+        options: ["مجموعة الكربوكسيل متأينة (-COO) والمجموعة الأمينية غير متأينة (NH2)", "مجموعة الكربوكسيل غير متأينة (COOH) والمجموعة الأمينية متأينة (+NH3)", "كل المجموعات غير متأينة", "كل المجموعات متأينة بالكامل"],
+        correct: 1,
+        explanation: "في المحاليل الحامضية (pH ofخفض)، الكربوكسيل بتبقى COOH غير متأينة والأمين بتبقى +NH3 متأينة. يعني الحمض الأميني بيبقى كاتيون."
+    },
+    {
+        question: "In alkaline solution (pH = 11), what is the form of amino acid?",
+        options: ["كاتيون ومجموعة الكربوكسيل COOH", "أنيون ومجموعة الكربوكسيل COO- ومجموعة الأمين NH2", "زيتر أيون متعادل", "جزيء يحمل شحنتين موجبتين"],
+        correct: 1,
+        explanation: "في المحاليل القلوية (pH عالي)، الكربوكسيل بتبقى COO- متأينة والأمين بتبقى NH2 غير متأينة. يعني الحمض الأميني بيبقى أنيون."
+    },
+    {
+        question: "What distinguishes Proline from other amino acids?",
+        options: ["له مجموعة أمين ثانوية (imino group)", "له ذرتين هيدروجين على الكربون ألفا", "مفيش عنده سلسلة جانبية", "له مجموعة كبريت في السلسلة الجانبية"],
+        correct: 0,
+        explanation: "البرولين مختلف لأن السلسلة الجانبية بتاعته ومجموعة الأمين الألفا بيشكلوا حلقة خماسية جامدة. عشان كده البيتسمى 'حمص إيميني' (imino acid) لأن ليه مجموعة أمين ثانوية NH بدل NH2."
+    },
+    {
+        question: "Which amino acid is the only one that is optically inactive?",
+        options: ["الألانين", "الفالين", "الجلايسين", "الليوسين"],
+        correct: 2,
+        explanation: "الجلايسين هو الحمض الأميني الوحيد الغير نشط ضوئيًا لأن الكربون ألفا عنده مرتبط به ذرتين هيدروجين (مش أربع مجموعات مختلفة)، فمفيش chiral center."
+    },
+    {
+        question: "جميع Amino acids الموجودة في البروتينات تتبع أي تكوين؟",
+        options: ["التكوين D", "التكوين L", "التكوين DL", "مفيش تكوين محدد"],
+        correct: 1,
+        explanation: "كل Amino acids الموجودة في البروتينات بتتبع التكوين L. لكن Amino acids D بتتوجد في بعض المضادات الحيوية وجدران الخلايا البكتيرية."
+    },
+    {
+        question: "أي of التالي يعتبر of Amino acids الأليفاتية ذات السلاسل المتفرعة (Branched-chain)؟",
+        options: ["الجلايسين والألانين", "الفالين والليوسين والأيسوليوسين", "السيرين والثريونين", "الفينيل ألانين والتيروزين"],
+        correct: 1,
+        explanation: "الفالين (Val)، الليوسين (Leu)، والأيسوليوسين (Ile) هم Amino acids الأليفاتية ذات السلاسل المتفرعة. وبيتسموا كمان BCAA."
+    },
+    {
+        question: "ما هي Amino acids اللي تحتوي على كبريت في سلسلتها الجانبية؟",
+        options: ["السيرين والثريونين", "السيستين والميثيونين", "الأسبارتات والجلو تاميت", "اللايسين والأرجينين"],
+        correct: 1,
+        explanation: "السيستين (Cys) والميثيونين (Met) هما Amino acids اللي فيها كبريت. السيستين بيكون روابط ثاني كبريتيد (disulfide bonds) المهمة لثبات البروتين."
+    },
+    {
+        question: "أي of التالي يعتبر of Amino acids الأروماتية (Aromatic)؟",
+        options: ["الجلايسين والألانين", "الفالين والليوسين", "الفينيل ألانين والتيروزين والتريبتوفان", "السيرين والثريونين"],
+        correct: 2,
+        explanation: "الفينيل ألانين (Phe)، التيروزين (Tyr)، والتريبتوفان (Trp) هم Amino acids الأروماتية اللي فيها حلقات بنزين أو حلقات مزدوجة."
+    },
+    {
+        question: "ما هي Amino acids الحامضية (Acidic amino acids)؟",
+        options: ["الهيستيدين واللايسين والأرجينين", "الأسبارتيك أسيد والجلو تاميك أسيد", "الأسباراجين والجلو تامين", "السيرين والثريونين"],
+        correct: 1,
+        explanation: "الأسبارتيك أسيد (Asp) والجلو تاميك أسيد (Glu) هم Amino acids الحامضية لأن سلاسلهم الجانبية فيها مجموعات كربوكسيل إضافية (-COOH)."
+    },
+    {
+        question: "عند الـ pH الفسيولوجي، ما هي شحنة Amino acids الحامضية؟",
+        options: ["موجبة", "سالبة", "متغايرة", "بدون شحنة"],
+        correct: 1,
+        explanation: "عند الـ pH الفسيولوجي، السلاسل الجانبية للأحماض الأمينية الحامضية بتبقى سالبة تمامًا (-COO-) وبيتقال عليهم 'أسبارتيت' و'جلو تاميت' بدل الأسيد."
+    },
+    {
+        question: "ما هي Amino acids القاعدية (Basic amino acids)؟",
+        options: ["الأسبارتيك والجلو تاميك", "الهيستيدين واللايسين والأرجينين", "الفينيل ألانين والتيروزين", "السيرين والثريونين"],
+        correct: 1,
+        explanation: "الهيستيدين (His)، اللايسين (Lys)، والأرجينين (Arg) هم Amino acids القاعدية. سلاسلهم الجانبية بتقبل البروتونات وبتبقى موجبة عند الـ pH الفسيولوجي."
+    },
+    {
+        question: "ما هي Amino acids اللي فيها مجموعات أميد (Amide)؟",
+        options: ["الأسبارتيك والجلو تاميك", "الأسباراجين والجلو تامين", "الهيستيدين واللايسين", "الفالين والليوسين"],
+        correct: 1,
+        explanation: "الأسباراجين (Asn) والجلو تامين (Gln) بيحتوا على مجموعات أميد في سلاسلهم الجانبية، وبيشاركوا في تكوين روابط هيدروجينية."
+    },
+    {
+        question: "كم عدد Amino acids الأساسية (Essential amino acids)؟",
+        options: ["5 أحماض أمينية", "8 أحماض أمينية", "10 amino acids", "12 حمض أميني"],
+        correct: 2,
+        explanation: "فيه 10 amino acids أساسية لازم نتناولها في الأكل لأن الجسم مش قادر يصنعها: فالين، أيسوليوسين، ليوسين، لايسين، أرجينين، ميثيونين، هيستيدين، ثريونين، تريبتوفان، وفينيل ألانين."
+    },
+    {
+        question: "أي of التالي يعتبر of Amino acids شبه الأساسية (Semi-essential)؟",
+        options: ["الجلايسين والألانين", "الأرجينين والهيستيدين", "الفالين والليوسين", "السيرين والثريونين"],
+        correct: 1,
+        explanation: "الأرجينين والهيستيدين بيُعتبروا شبه أساسيين لأن الجسم ممكن يصنعهم بكميات صغيرة مش كافية للاحتياجات الفسيولوجية، خاصة في النمو."
+    },
+    {
+        question: "ما هو الحمض الأميني الأساسي الوحيد اللي بيُصنف كـ Ketogenic فقط؟",
+        options: ["الفالين", "الليوسين", "الأيسوليوسين", "الثريونين"],
+        correct: 1,
+        explanation: "الليوسين (Leucine) هو الحمض الأميني الأساسي الوحيد اللي بيُصنف كـ Ketogenic فقط. بمعنى إنه بيتحول لأجسام كيتونية of غير ما يعطي جلوكوز."
+    },
+    {
+        question: "ما هي Amino acids اللي بتُصنف كـ Mixed (Glucogenic + Ketogenic)؟",
+        options: ["الليوسين واللايسين", "الأيسوليوسين، الفينيل ألانين، التيروزين، التريبتوفان", "الجلايسين والألانين", "الفالين والميثيونين"],
+        correct: 1,
+        explanation: "Amino acids المختلطة هي اللي بتدي جلوكوز وأجسام كيتونية: أيسوليوسين، فينيل ألانين، تيروزين، وتريبتوفان."
+    },
+    {
+        question: "أي of التالي حمض أميني of غير أساسي (Non-essential)؟",
+        options: ["الفالين", "الليوسين", "الجلايسين", "الأيسوليوسين"],
+        correct: 2,
+        explanation: "الجلايسين of Amino acids غير الأساسية لأن الجسم بيصنعه بكميات كافية. of ضof الغير أساسيين كمان: ألانين، سيرين، سيستين، تيروسين، جلو تامين، جلو تاميت، أسبارتيت، أسباراجين، وبرولين."
+    },
+    {
+        question: "ما هي Amino acids ذات السلاسل الجانبية غير القطبية (Non-polar)؟",
+        options: ["الأسبارتكي والجلو تاميك", "الجلايسين، الألانين، الفالين، الليوسين، الأيسوليوسين، الفينيل ألانين، التريبتوفان، الميثيونين، البرولين", "الهيستيدين، اللايسين، الأرجينين", "السيرين، الثريونين، التيروزين"],
+        correct: 1,
+        explanation: "Amino acids غير القطبية (9 أحماض) بتتكون of سلاسل جانبية كارهة للماء. في المحلول المائي بتتجمع في داخل البروتين عشان تعطيه الشكل ثلاثي الأبعاد."
+    },
+    {
+        question: "في مرض الأنيميا الofجلية (Sickle cell anemia)، أي حمض أميني بيحل محل أي واحد؟",
+        options: ["الفالين يحل محل الجلو تاميت", "الجلايسين يحل محل الألانين", "اللايسين يحل محل الأرجينين", "الميثيونين يحل محل السيستين"],
+        correct: 0,
+        explanation: "في الأنيميا الofجلية، الفالين (غير قطبي) بيحل محل الجلو تاميت (قطبي سالب) في المركز السادس of الوحدة بيتا للهيموجلوبين، وبيسبب تغيier شكل كريات الدم الحمراء."
+    },
+    {
+        question: "ما هي وظيفة مجموعة -SH في حمص السيستين؟",
+        options: ["Oxygen transport", "تكوين روابط ثاني كبريتيد (-S-S-) لثبات البروتينات", "تحفيز التفاعلات الإنزيمية فقط", "تخزين الطاقة"],
+        correct: 1,
+        explanation: "مجموعة -SH في السيستين بتكون روابط ثاني كبريتيد (disulfide bonds) لما تتعاكس سيستينين. الروابط دي مهمة لثبات البروتينات خارج الخلية زي Albumin."
+    },
+    {
+        question: "ما هي Amino acids ذات السلاسل الجانبية القطبية غير المشحونة؟",
+        options: ["الجلايسين والألانين", "السيرين، الثريونين، التيروسين، الأسباراجين، الجلو تامين، السيستين", "الأسبارتيك والجلو تاميك", "الهيستيدين واللايسين والأرجينين"],
+        correct: 1,
+        explanation: "السيرين والثريونين والتيروسين فيهم -OH، الأسباراجين والجلو تامين فيهم مجموعات أميد، والسيستين فيه -SH. كلهم بيشاركوا في روابط هيدروجينية."
+    },
+    {
+        question: "ما هي Amino acids اللي فيها مجموعات هيدروكسيل (-OH)؟",
+        options: ["الجلايسين والألانين", "الفالين والليوسين", "السيرين والثريونين والتيروزين", "الهيستيدين واللايسين"],
+        correct: 2,
+        explanation: "السيرين (Ser)، الثريونين (Thr)، والتيروزين (Tyr) بيحتوا على مجموعات هيدروكسيل (-OH) في سلاسلهم الجانبية وبيشاركوا في تكوين روابط هيدروجينية."
+    },
+    {
+        question: "ما هو الإنزيم المسؤول عن تثبيت الكربون في النباتات؟",
+        options: ["Hemoglobin", "RUBISCO", "Insulin", "الميوسين"],
+        correct: 1,
+        explanation: "RUBISCO (Ribulose-1,5-bisphosphate carboxylase/oxygenase) هو إنزيم مهم جدًا في البناء الضوئي وبيربط ثاني أكسيد الكربون بالجزيئات العضوية."
+    },
+    {
+        question: "أي بروتين of التالي بيُصنف كـ Hormonal protein؟",
+        options: ["Hemoglobin", "Ferritin", "Insulin", "Actin"],
+        correct: 2,
+        explanation: "Insulin هرمون بروتيني بينظم مستوى السكر في الدم. of الهرمونات البروتينية كمان: growth hormone، thyroid hormone، وglucagon."
+    },
+    {
+        question: "ما هي Amino acids الأساسية الثلاثة اللي بتبدأ بحرف I, L, V؟",
+        options: ["Isoleucine, Leucine, Valine", "Iodine, Lead, Vanadium", "Insulin, Lysine, Valine", "Inositol, Leucine, Valine"],
+        correct: 0,
+        explanation: "الأيسوليوسين، الليوسين، والفالين هم Amino acids الأساسية ذات السلاسل المتفرعة، وبيتسموا Branched-Chain Amino Acids (BCAA)."
+    },
+    {
+        question: "في أي نوع of Collagen موجود في الغضاريف المفصلية (Articular cartilage)؟",
+        options: ["النوع الأول فقط", "النوع الثاني والتاسع والحادي عشر", "النوع الثالث فقط", "النوع الرابع والخامس"],
+        correct: 1,
+        explanation: "الغضاريف المفصلية والأذن وقرني الأضلاع بيحتوا على Collagen of الأنواع II, IX, XI. النوع الأول موجود في Skin, bones, and tendons."
+    },
+    {
+        question: "ما هي الجملة المختصرة لتذكر Amino acids الأساسية؟",
+        options: ["PVT TIM HALL", "GAS C GLT", "No shortcuts", "ALL TIME TV"],
+        correct: 0,
+        explanation: "PVT TIM HALL: Phenylalanine, Valine, Threonine, Tryptophan, Isoleucine, Methionine, Histidine, Arginine, Leucine, Lysine. الأرجينين والهيستيدين شبه أساسيين."
+    },
+    {
+        question: "ما هي وظيفة بروتين Albumin في المصل (Serum Albumin)؟",
+        options: ["Iron storage", "نقل الجزيئات والأحماض الدهنية", "هضم البروتينات", "Antibody production"],
+        correct: 1,
+        explanation: "Albumin في المصل هو بروتين نقل بيحمل الأحماض الدهنية والأدوية والجزيئات التانية في الدم. كمان بيساهم في الضغط الأسموزي للدم."
+    },
+    {
+        question: "ما هو المصدر الأساسي لبروتين الكازين (Casein)؟",
+        options: ["بياض البيض", "اللبن (الحليب)", "الطحالب", "اللحوم"],
+        correct: 1,
+        explanation: "الكازين هو بروتين تخزيني موجود في اللبن. بيخزن Amino acids للرضيع. كمان Albumin في بياض البيض بروتين تخزيني."
+    },
+    {
+        question: "أي of التالي يعتبر بروتين هيكلي (Structural protein)؟",
+        options: ["Insulin", "Hemoglobin", "حديد العنكبوت (Spider silk)", "الأجسام المضادة"],
+        correct: 2,
+        explanation: "حديد العنكبوت (Spider silk) بروتين هيكلي قوي جدًا. of البروتينات الهيكلية كمان: Collagen، Elastin، وKeratin."
+    },
+    {
+        question: "ما هي Amino acids Glucogenic فقط؟",
+        options: ["الليوسين واللايسين", "الفالين، الميثيونين، الهيستيدين، الأرجينين، الجلايسين، الألانين، السيرين، وغيرهم", "الفينيل ألانين والتيروزين", "التريبتوفان فقط"],
+        correct: 1,
+        explanation: "Amino acids Glucogenic بتدي جلوكوز أو وسطيات كربوهيدراتية. ofها: فالين، ميثيونين، هيستيدين، أرجينين، جلايسين، ألانين، سيرين، ثريونين، سيستين، برولين، جلو تاميت، جلو تامين، أسبارتيت، أسباراجين."
+    },
+    {
+        question: "ما هي أجسام الكيتون اللي بتنتج of Amino acids Ketogenic؟",
+        options: ["Glucose والجليكوجين", "الأسيتون، حمض الأسيتوأسيتيك، حمض beta-hydroxybutyric", "البيروفيت والأكسالوأسيتيت", "اللاكتيت والماليت"],
+        correct: 1,
+        explanation: "Amino acids Ketogenic بتدي أجسام الكيتون: أسيتون، حمض أسيتوأسيتيك، وحمص beta-hydroxybutyric. الليوسين واللايسين بس هم الـ Ketogenic وحدهم."
+    },
+    {
+        question: "ما هي مجموعة Amino acids اللي بتُصنف كـ Essential و Ketogenic في نفس الوقت؟",
+        options: ["الليوسين واللايسين", "الفالين والأيسوليوسين", "الهيستيدين والأرجينين", "السيرين والثريونين"],
+        correct: 0,
+        explanation: "الليوسين واللايسين هم Amino acids الأساسية اللي بتُصنف كـ Ketogenic فقط. بمعنى إنهم بيديوا أجسام كيتونية مش جلوكوز."
+    },
+    {
+        question: "ما هو التأثير المائي (Hydrophobic effect)؟",
+        options: ["تجاذب السلاسل القطبية في الماء", "تجمع السلاسل غير القطبية في داخل البروتين في المحاليل المائية", "تفاعل الأحماض الأofية مع الماء", "ذوبان البروتينات في Lipids"],
+        correct: 1,
+        explanation: "التأثير المائي هو تجمع السلاسل الجانبية غير القطبية (الكارهة للماء) في داخل البروتين لما يكون في محلول مائي، وده بيدي البروتين شكله ثلاثي الأبعاد."
+    },
+    {
+        question: "ما هي السلسلة الجانبية للجلايسين؟",
+        options: ["مجموعة ميثيل (-CH3)", "ذرة هيدروجين واحدة", "مجموعة كربوكسيل", "حلقة بنزين"],
+        correct: 1,
+        explanation: "الجلايسين ليه سلسلة جانبية (R-group) هي ذرة هيدروجين واحدة فقط عشان كده الكربون ألفا عنده ذرتين هيدروجين ومش نشط ضوئي."
+    },
+    {
+        question: "ما هي الميزة الخاصة بالأرجينين مقارنة باللايسين؟",
+        options: ["الأرجينين غير أساسي واللايسين أساسي", "الأرجينين بيحتوي على مجموعة جوانيدينيم في سلسلته الجانبية", "الأرجينين أروماتي واللايسين أليفاتي", "الأرجينين Ketogenic والأرجينين Glucogenic"],
+        correct: 1,
+        explanation: "الأرجينين بيحتوي على مجموعة جوانيدينيم في سلسلته الجانبية وده بيديه خاصية قاعدية قوية. الاتنين أساسيين (شبه أساسي للأرجينين) و Glucogenic."
+    },
+    {
+        question: "ما هي وظيفة بروتين الرودوبسين (Rhodopsin)؟",
+        options: ["Oxygen transport", "الاستقبال الضوئي في الشبكية", "Iron storage", "انقباض العضلات"],
+        correct: 1,
+        explanation: "الرودوبسين هو بروتين مستقبل (Receptor) موجود في شبكية العين وبيستقبل الضوء وبيحوله لإشارات عصبية. of أمثلة البروتينات المستقبلة."
+    },
+    {
+        question: "ما هي المجموعة الوظيفية المميزة للتيروزين مقارنة بالفينيل ألانين؟",
+        options: ["مجموعة أمين إضافية", "مجموعة هيدروكسيل (-OH) على الحلقة الأروماتية", "مجموعة كربوكسيل إضافية", "مجموعة كبريت"],
+        correct: 1,
+        explanation: "التيروسين زي الفينيل ألانين لكن عليه مجموعة هيدروكسيل (-OH) على الحلقة الأروماتية. ده بيخليه قطبي ومشترك في تفاعلات فسفرة مهمة."
+    },
+    {
+        question: "ما هو التسلسل الصحيح لتصنيع البروتين of الـ DNA؟",
+        options: ["DNA -> Translation -> RNA -> Transcription -> Protein", "DNA -> Replication -> RNA -> Translation -> Protein", "DNA -> Transcription -> RNA -> Translation -> Protein", "RNA -> Transcription -> DNA -> Translation -> Protein"],
+        correct: 2,
+        explanation: "التسلسل الصحيح: DNA -> Transcription (نسخ) -> RNA -> Translation (ترجمة) في الريبوسوم -> Protein. العملية دي بتتسمى 'Central Dogma' في البيولوجيا الجزيئية."
+    },
+    {
+        question: "ما هو البروتين المسؤول عن تخزين الأكسجين في العضلات؟",
+        options: ["Hemoglobin", "Myoglobin", "Albumin", "Ferritin"],
+        correct: 1,
+        explanation: "Myoglobin هو بروتين بيخزن الأكسجين في أنسجة العضلات. Hemoglobin بيعمل على Oxygen transport في الدم بينما Myoglobin بيخزنه في العضلات للاستخدام عند الحاجة."
+    },
+    {
+        question: "ما هي السمة المشتركة بين السيرين والثريونين والتيروزين؟",
+        options: ["كلهم أحماض أمينية حامضية", "كلهم بيحتوا على مجموعات هيدروكسيل (-OH)", "كلهم أحماض أمينية أساسية", "كلهم أحماض أمينية أروماتية"],
+        correct: 1,
+        explanation: "السيرين والثريونين والتيروزين كلهم بيحتوا على مجموعات هيدروكسيل في سلاسلهم الجانبية، وده بيخليهم قادرين يعملوا روابط هيدروجينية."
+    },
+    {
+        question: "ما هو الفرق بين الأسبارتيك أسيد والأسبارتيت؟",
+        options: ["الأسبارتيك أسيد سالب والأسبارتيت متعادل", "الأسبارتيك أسيد هو الاسم الكيميائي والأسبارتيت بيتستخدم لما يكون سالب عند pH فسيولوجي", "مفيش فرق بينهم", "الأسبارتيت أساسي والأسبارتيك أسيد غير أساسي"],
+        correct: 1,
+        explanation: "الأسبارتيك أسيد هو الاسم الكيميائي للحمض الأميني. لكن عند الـ pH الفسيولوجي، السلسلة الجانبية بتبقى سالبة (-COO-) فبيتقال عليه 'أسبارتيت' للتأكيد على الشحنة السالبة."
+    },
+    {
+        question: "ما هو البيئة الofاسبة لتجمع Amino acids غير القطبية على السطح الخارجي للبروتين؟",
+        options: ["المحاليل المائية", "البيئة الهيدروفوبية (زي الأغشية الدهنية)", "الدم", "السيتوبلازم"],
+        correct: 1,
+        explanation: "في البيئة الهيدروفوبية (زي الأغشية الدهنية)، Amino acids غير القطبية بتتجمع على السطح الخارجي للبروتين عشان تتفاعل مع البيئة الدهنية."
+    },
+    {
+        question: "ما هيخاصية التكوين (Configuration) للأحماض الأمينية في المضادات الحيوية؟",
+        options: ["كلها تكوين L", "كلها تكوين D", "بعضها تكوين D", "مفيش تكوين محدد"],
+        correct: 2,
+        explanation: "كل Amino acids في بروتينات الثدييات بتتبع تكوين L. لكن Amino acids بتكوين D بتتوجد في بعض المضادات الحيوية وجدران الخلايا البكتيرية."
+    },
+    {
+        question: "ما هي الحمض الأميني اللي بيتصنف كـ شبه أساسي (Semi-essential)؟",
+        options: ["اللايسين والليوسين", "الأرجينين والهيستيدين", "الفالين والميثيونين", "الجلايسين والألانين"],
+        correct: 1,
+        explanation: "الأرجينين والهيستيدين بيُصنفوا كـ شبه أساسيين لأن الجسم بيصنعهم بكميات صغيرة مش كافية وخصوصًا في فترات النمو السريع والإجهاد."
+    },
+    {
+        question: "ما هي الشحنة الصافية للحمص الأميني في شكل الزيتر أيون؟",
+        options: ["موجبة", "سالبة", "صفر (متغايرة)", "مفيش شحنة"],
+        correct: 2,
+        explanation: "في شكل الزيتر أيون، مجموعة الأمين موجبة (+NH3) ومجموعة الكربوكسيل سالبة (-COO-)، فالشحنة الصافية بتكون صفر لأن الشحنتين بيلغوا بعض."
+    }
+];
+
+</script>
+    <script>
+let currentQuestion = 0;
+let correctAnswers = 0;
+let wrongAnswers = 0;
+let answered = [];
+
+function init() {
+    document.getElementById('quizContainer').innerHTML = '';
+    document.getElementById('results').classList.remove('show');
+    currentQuestion = 0;
+    correctAnswers = 0;
+    wrongAnswers = 0;
+    answered = [];
+    updateProgress();
+    updateScores();
+    renderQuestion();
+}
+
+function renderQuestion() {
+    const q = questions[currentQuestion];
+    const container = document.getElementById('quizContainer');
+    
+    container.innerHTML = `
+        <div class="question-card">
+            <span class="question-number">Question ${currentQuestion + 1} of ${questions.length}</span>
+            <div class="question-text">${q.question}</div>
+            <div class="options">
+                ${q.options.map((opt, i) => `
+                    <div class="option ${answered[currentQuestion] !== undefined ? (i === q.correct ? 'correct' : (i === answered[currentQuestion] && i !== q.correct ? 'wrong' : '')) : ''} ${answered[currentQuestion] !== undefined ? 'disabled' : ''}" 
+                         onclick="selectAnswer(${i})" 
+                         id="opt-${i}">
+                        ${String.fromCharCode(65 + i)}. ${opt}
+                    </div>
+                `).join('')}
+            </div>
+            <div class="feedback ${answered[currentQuestion] !== undefined ? (answered[currentQuestion] === q.correct ? 'correct show' : 'wrong show') : ''}" id="feedback">
+                <h3>${answered[currentQuestion] !== undefined ? (answered[currentQuestion] === q.correct ? '✅ إجابة Correct!' : '❌ إجابة Wrong') : ''}</h3>
+                <p><strong>Explanation:</strong> ${q.explanation}</p>
+            </div>
+            ${answered[currentQuestion] !== undefined ? '<button class="next-btn show" onclick="nextQuestion()">Next →</button>' : ''}
+        </div>
+    `;
+}
+
+function selectAnswer(index) {
+    if (answered[currentQuestion] !== undefined) return;
+    
+    answered[currentQuestion] = index;
+    const q = questions[currentQuestion];
+    
+    if (index === q.correct) {
+        correctAnswers++;
+    } else {
+        wrongAnswers++;
+    }
+    
+    updateScores();
+    renderQuestion();
+}
+
+function nextQuestion() {
+    currentQuestion++;
+    
+    if (currentQuestion >= questions.length) {
+        showResults();
+    } else {
+        updateProgress();
+        renderQuestion();
+    }
+}
+
+function updateProgress() {
+    const progress = (currentQuestion / questions.length) * 100;
+    document.getElementById('progressFill').style.width = progress + '%';
+    document.getElementById('progressText').textContent = `${currentQuestion} / ${questions.length}`;
+}
+
+function updateScores() {
+    document.getElementById('correctCount').textContent = correctAnswers;
+    document.getElementById('wrongCount').textContent = wrongAnswers;
+    const percentage = questions.length > 0 ? Math.round((correctAnswers / (correctAnswers + wrongAnswers)) * 100) || 0 : 0;
+    document.getElementById('percentage').textContent = percentage + '%';
+}
+
+function showResults() {
+    document.getElementById('quizContainer').innerHTML = '';
+    document.getElementById('progressBar').classList.add('hidden');
+    document.querySelector('.score-display').classList.add('hidden');
+    
+    const percentage = Math.round((correctAnswers / questions.length) * 100);
+    let emoji = '';
+    let message = '';
+    
+    if (percentage >= 90) {
+        emoji = '🏆';
+        message = 'ممتاز! أداء رائع جدًا! إنت متمكن of المحاضرة دي تمامًا!';
+    } else if (percentage >= 70) {
+        emoji = '🎉';
+        message = 'Well done! Very good result. Focus on the points you got wrong.';
+    } else if (percentage >= 50) {
+        emoji = '📚';
+        message = 'Acceptable, but you need to review the lecture again and understand the basics better.';
+    } else {
+        emoji = '💪';
+        message = 'Don't worry! Review the lecture again and try to understand the basics. You can do it!';
+    }
+    
+    document.getElementById('resultEmoji').textContent = emoji;
+    document.getElementById('finalCorrect').textContent = correctAnswers + '/' + questions.length;
+    document.getElementById('finalPercentage').textContent = percentage + '%';
+    document.getElementById('resultMessage').textContent = message;
+    document.getElementById('results').classList.add('show');
+}
+
+function restartQuiz() {
+    document.getElementById('progressBar').classList.remove('hidden');
+    document.querySelector('.score-display').classList.remove('hidden');
+    init();
+}
+
+// Initialize quiz
+init();
+
+</script>
+</body>
+</html>
